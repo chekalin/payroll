@@ -14,29 +14,55 @@ import org.springframework.http.HttpStatus
 import java.util.*
 import kotlin.collections.ArrayList
 
-@SpringBootTest(webEnvironment= WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class PayrollApplicationIT {
 
-	@Autowired lateinit var restTemplate: TestRestTemplate
+    @Autowired
+    lateinit var restTemplate: TestRestTemplate
 
-	@Autowired lateinit var employeeRepository: EmployeeRepository
+    @Autowired
+    lateinit var employeeRepository: EmployeeRepository
 
-	@BeforeEach
-	internal fun init() {
-		employeeRepository.saveAll(listOf(
-                Employee(UUID.randomUUID().toString(), "Stas", "Chekalin", "stas@example.com", "SOFTWARE_ENGINEER"),
-                Employee(UUID.randomUUID().toString(), "John", "McClane", "john@example.com", "DEV_OPS_ENGINEER"))
-        )
-	}
+    @BeforeEach
+    internal fun init() {
+        employeeRepository.deleteAll()
+    }
 
-	@Test
-	fun returnsExistingEmployees() {
-		val response = restTemplate.getForEntity("/employees/", EmployeeList::class.java)
+    private val testEmployee = Employee(
+            id = UUID.randomUUID().toString(),
+            firstName = "John",
+            lastName = "McClane",
+            email = "john@example.com",
+            role = "DEV_OPS_ENGINEER"
+    )
 
-		assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-		assertThat(response.body).hasSize(2)
-	}
+    @Test
+    internal fun `returns existing employees`() {
+        employeeRepository.saveAll(listOf(
+                testEmployee.copy(id = UUID.randomUUID().toString()),
+                testEmployee.copy(id = UUID.randomUUID().toString())
+        ))
 
-	class EmployeeList : MutableList<EmployeeDto> by ArrayList()
+        val response = restTemplate.getForEntity("/employees/", EmployeeList::class.java)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body).hasSize(2)
+    }
+
+    @Test
+    internal fun `creates employee`() {
+        val newEmployee = EmployeeDto(firstName = "Stas", lastName = "Chekalin", email = "stas@example.com", role = "SOFTWARE_ENGINEER")
+
+        val response = restTemplate.postForEntity("/employees/", newEmployee, EmployeeDto::class.java)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        val createdEmployeeId = response.body!!.id
+        assertThat(createdEmployeeId).isNotNull()
+
+        val employees = restTemplate.getForEntity("/employees/", EmployeeList::class.java).body!!
+        assertThat(employees.map {it.id}).contains(createdEmployeeId)
+    }
+
+    class EmployeeList : MutableList<EmployeeDto> by ArrayList()
 
 }

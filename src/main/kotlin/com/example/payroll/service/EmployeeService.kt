@@ -11,4 +11,8 @@ class EmployeeService(val employeeRepository: EmployeeRepository) {
         return employeeRepository.findAll().filterNotNull()
     }
 
+    fun createEmployee(employee: Employee): Employee {
+        return employeeRepository.save(employee)
+    }
+
 }
