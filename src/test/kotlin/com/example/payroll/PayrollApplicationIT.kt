@@ -2,6 +2,7 @@ package com.example.payroll
 
 import com.example.payroll.domain.Employee
 import com.example.payroll.domain.EmployeeRepository
+import com.example.payroll.web.CreateEmployeeDto
 import com.example.payroll.web.EmployeeDto
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.boot.test.web.client.TestRestTemplate
+import org.springframework.boot.test.web.client.getForEntity
 import org.springframework.http.HttpStatus
 import java.util.*
 import kotlin.collections.ArrayList
@@ -43,15 +45,15 @@ class PayrollApplicationIT {
                 testEmployee.copy(id = UUID.randomUUID().toString())
         ))
 
-        val response = restTemplate.getForEntity("/employees/", EmployeeList::class.java)
+        val response = restTemplate.getForEntity<EmployeeList>("/employees/")
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body).hasSize(2)
     }
 
     @Test
-    internal fun `creates employee`() {
-        val newEmployee = EmployeeDto(firstName = "Stas", lastName = "Chekalin", email = "stas@example.com", role = "SOFTWARE_ENGINEER")
+    internal fun `creates and gets employee`() {
+        val newEmployee = CreateEmployeeDto(firstName = "Stas", lastName = "Chekalin", email = "stas@example.com", role = "SOFTWARE_ENGINEER")
 
         val response = restTemplate.postForEntity("/employees/", newEmployee, EmployeeDto::class.java)
 
@@ -59,8 +61,18 @@ class PayrollApplicationIT {
         val createdEmployeeId = response.body!!.id
         assertThat(createdEmployeeId).isNotNull()
 
-        val employees = restTemplate.getForEntity("/employees/", EmployeeList::class.java).body!!
-        assertThat(employees.map {it.id}).contains(createdEmployeeId)
+        val employee = restTemplate.getForEntity<EmployeeDto>("/employees/${createdEmployeeId}")
+
+        assertThat(employee.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(employee.body).isNotNull()
+        assertThat(employee.body!!.id).isEqualTo(createdEmployeeId)
+    }
+
+    @Test
+    internal fun `returns 404 when employee data not found`() {
+        val response = restTemplate.getForEntity<Any>("/employees/does-not-exist")
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.NOT_FOUND)
     }
 
     class EmployeeList : MutableList<EmployeeDto> by ArrayList()

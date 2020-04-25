@@ -15,4 +15,9 @@ class EmployeeService(val employeeRepository: EmployeeRepository) {
         return employeeRepository.save(employee)
     }
 
+    fun getEmployee(employeeId: String): Employee {
+        return employeeRepository.findById(employeeId)
+                .orElseThrow { EmployeeNotFoundException("Employee with id $employeeId not found") }
+    }
+
 }

@@ -45,7 +45,7 @@ internal class EmployeeControllerTest {
 
     @Test
     internal fun `creates employee in employee service`() {
-        val newEmployee = EmployeeDto(firstName = "Stas", lastName = "Chekalin", email = "stas@example.com", role = "SOFTWARE_ENGINEER")
+        val newEmployee = CreateEmployeeDto(firstName = "Stas", lastName = "Chekalin", email = "stas@example.com", role = "SOFTWARE_ENGINEER")
         val expectedCreatedEmployee = Employee(id = UUID.randomUUID().toString(), firstName = "Stas", lastName = "Chekalin", email = "stas@example.com", role = "SOFTWARE_ENGINEER")
 
         given(employeeService.createEmployee(any())).willReturn(expectedCreatedEmployee)
